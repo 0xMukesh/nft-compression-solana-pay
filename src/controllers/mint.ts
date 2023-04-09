@@ -33,6 +33,8 @@ export const mintHandler = async (req: Request, res: Response) => {
       });
     }
 
+    const user = new PublicKey(account);
+
     try {
       const nftMetadata: MetadataArgs = {
         name: "Compressiooooon #1",
@@ -61,13 +63,14 @@ export const mintHandler = async (req: Request, res: Response) => {
       };
 
       const transaction = await mintCompressedNFT(
-        new PublicKey(account),
+        PAYER.publicKey,
+        user,
         TREE_ADDRESS,
         COLLECTION_MINT_ACCOUNT,
         COLLECTION_METADATA_ACCOUNT,
         COLLECTION_MASTER_EDITION_ACCOUNT,
         nftMetadata,
-        new PublicKey(account)
+        user
       );
 
       if (!transaction) {
@@ -80,7 +83,6 @@ export const mintHandler = async (req: Request, res: Response) => {
         await CONNECTION.getLatestBlockhash({
           commitment: "confirmed",
         });
-      transaction.feePayer = new PublicKey(account);
       transaction.recentBlockhash = blockhash;
       transaction.lastValidBlockHeight = lastValidBlockHeight;
 

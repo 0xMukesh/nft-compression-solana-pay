@@ -14,6 +14,7 @@ import { PAYER, CONNECTION } from "@/constants";
 
 export const mintCompressedNFT = async (
   payer: PublicKey,
+  user: PublicKey,
   merkleTreeAddress: PublicKey,
   mintAccount: PublicKey,
   metadataAccount: PublicKey,
@@ -62,22 +63,15 @@ export const mintCompressedNFT = async (
       }
     );
 
-    mintInstruction.keys.push({
-      pubkey: PAYER.publicKey,
-      isSigner: true,
-      isWritable: true,
-    });
-
     const { blockhash, lastValidBlockHeight } =
       await CONNECTION.getLatestBlockhash({
         commitment: "confirmed",
       });
 
     const transaction = new Transaction().add(mintInstruction);
-    transaction.feePayer = payer;
+    transaction.feePayer = user;
     transaction.recentBlockhash = blockhash;
     transaction.lastValidBlockHeight = lastValidBlockHeight;
-    transaction.partialSign(PAYER);
 
     return transaction;
   } catch (err) {
