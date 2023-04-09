@@ -1,10 +1,4 @@
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  sendAndConfirmTransaction,
-  Transaction,
-} from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import {
   createMintToCollectionV1Instruction,
   MetadataArgs,
@@ -16,9 +10,10 @@ import {
 } from "@solana/spl-account-compression";
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
+import { PAYER, CONNECTION } from "@/constants";
+
 export const mintCompressedNFT = async (
-  connection: Connection,
-  payer: Keypair,
+  payer: PublicKey,
   merkleTreeAddress: PublicKey,
   mintAccount: PublicKey,
   metadataAccount: PublicKey,
@@ -40,14 +35,14 @@ export const mintCompressedNFT = async (
 
     const mintInstruction = createMintToCollectionV1Instruction(
       {
-        payer: payer.publicKey,
+        payer,
         merkleTree: merkleTreeAddress,
         treeAuthority,
-        treeDelegate: payer.publicKey,
+        treeDelegate: payer,
         // reciever of the NFT
-        leafOwner: toAddress || payer.publicKey,
-        leafDelegate: payer.publicKey,
-        collectionAuthority: payer.publicKey,
+        leafOwner: toAddress || payer,
+        leafDelegate: PAYER.publicKey,
+        collectionAuthority: PAYER.publicKey,
         collectionAuthorityRecordPda: BUBBLEGUM_PROGRAM_ID,
         collectionMint: mintAccount,
         collectionMetadata: metadataAccount,
@@ -67,20 +62,24 @@ export const mintCompressedNFT = async (
       }
     );
 
-    const transaction = new Transaction().add(mintInstruction);
-    transaction.feePayer = payer.publicKey;
+    mintInstruction.keys.push({
+      pubkey: PAYER.publicKey,
+      isSigner: true,
+      isWritable: true,
+    });
 
-    const signature = await sendAndConfirmTransaction(
-      connection,
-      transaction,
-      [payer],
-      {
+    const { blockhash, lastValidBlockHeight } =
+      await CONNECTION.getLatestBlockhash({
         commitment: "confirmed",
-      }
-    );
+      });
 
-    console.log("successfully minted a compressed nft");
-    console.log(`signature - ${signature}`);
+    const transaction = new Transaction().add(mintInstruction);
+    transaction.feePayer = payer;
+    transaction.recentBlockhash = blockhash;
+    transaction.lastValidBlockHeight = lastValidBlockHeight;
+    transaction.partialSign(PAYER);
+
+    return transaction;
   } catch (err) {
     console.log("an error occured while minting the compressed nft");
     console.log(err);

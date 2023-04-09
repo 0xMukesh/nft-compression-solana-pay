@@ -1,6 +1,4 @@
 import {
-  Connection,
-  Keypair,
   PublicKey,
   sendAndConfirmTransaction,
   Transaction,
@@ -12,26 +10,27 @@ import {
   createCreateMasterEditionV3Instruction,
   createSetCollectionSizeInstruction,
 } from "@metaplex-foundation/mpl-token-metadata";
-import * as Token from "@solana/spl-token";
-
-import { sleep } from "@/utils";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  createMint,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 
+import { sleep } from "@/utils";
+import { CONNECTION, PAYER } from "@/constants";
+
 export const createCollection = async (
-  connection: Connection,
-  payer: Keypair,
   metadata: CreateMetadataAccountArgsV3
 ) => {
   try {
     console.log("creating collection's mint account...");
-    const mintAccount = await Token.createMint(
-      connection,
-      payer,
-      payer.publicKey,
-      payer.publicKey,
+    const mintAccount = await createMint(
+      CONNECTION,
+      PAYER,
+      PAYER.publicKey,
+      PAYER.publicKey,
       0,
       undefined,
       {
@@ -44,11 +43,11 @@ export const createCollection = async (
     sleep(1000);
 
     console.log("creating token account...");
-    const tokenAccount = await Token.getOrCreateAssociatedTokenAccount(
-      connection,
-      payer,
+    const tokenAccount = await getOrCreateAssociatedTokenAccount(
+      CONNECTION,
+      PAYER,
       mintAccount,
-      payer.publicKey,
+      PAYER.publicKey,
       true,
       "confirmed",
       {
@@ -60,12 +59,12 @@ export const createCollection = async (
     console.log(`token account - ${tokenAccount.address.toString()}`);
 
     console.log("minting 1 token for the collection...");
-    const mintSignature = await Token.mintTo(
-      connection,
-      payer,
+    const mintSignature = await mintTo(
+      CONNECTION,
+      PAYER,
       mintAccount,
       tokenAccount.address,
-      payer,
+      PAYER,
       1,
       [],
       {
@@ -90,9 +89,9 @@ export const createCollection = async (
       {
         metadata: metadataAccount,
         mint: mintAccount,
-        mintAuthority: payer.publicKey,
-        payer: payer.publicKey,
-        updateAuthority: payer.publicKey,
+        mintAuthority: PAYER.publicKey,
+        payer: PAYER.publicKey,
+        updateAuthority: PAYER.publicKey,
       },
       {
         createMetadataAccountArgsV3: metadata,
@@ -116,9 +115,9 @@ export const createCollection = async (
         {
           edition: masterEditionAccount,
           mint: mintAccount,
-          mintAuthority: payer.publicKey,
-          payer: payer.publicKey,
-          updateAuthority: payer.publicKey,
+          mintAuthority: PAYER.publicKey,
+          payer: PAYER.publicKey,
+          updateAuthority: PAYER.publicKey,
           metadata: metadataAccount,
         },
         {
@@ -131,11 +130,11 @@ export const createCollection = async (
     const collectionSizeInstruction = createSetCollectionSizeInstruction(
       {
         collectionMetadata: metadataAccount,
-        collectionAuthority: payer.publicKey,
+        collectionAuthority: PAYER.publicKey,
         collectionMint: mintAccount,
       },
       {
-        setCollectionSizeArgs: { size: 10 },
+        setCollectionSizeArgs: { size: 1 },
       }
     );
 
@@ -143,12 +142,12 @@ export const createCollection = async (
       .add(createMetadataInstruction)
       .add(createMasterEditionInstruction)
       .add(collectionSizeInstruction);
-    transaction.feePayer = payer.publicKey;
+    transaction.feePayer = PAYER.publicKey;
 
     const signature = await sendAndConfirmTransaction(
-      connection,
+      CONNECTION,
       transaction,
-      [payer],
+      [PAYER],
       {
         commitment: "confirmed",
       }

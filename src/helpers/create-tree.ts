@@ -1,5 +1,4 @@
 import {
-  Connection,
   Keypair,
   PublicKey,
   sendAndConfirmTransaction,
@@ -15,10 +14,9 @@ import {
   SPL_NOOP_PROGRAM_ID,
   ValidDepthSizePair,
 } from "@solana/spl-account-compression";
+import { CONNECTION, PAYER } from "@/constants";
 
 export const createMerkleTree = async (
-  connection: Connection,
-  payer: Keypair,
   merkleTreeKeypair: Keypair,
   depthSizePair: ValidDepthSizePair,
   canopyDepth: number
@@ -33,9 +31,9 @@ export const createMerkleTree = async (
 
   // allocates merkle tree's account
   const allocTreeInstruction = await createAllocTreeIx(
-    connection,
+    CONNECTION,
     merkleTreeKeypair.publicKey,
-    payer.publicKey,
+    PAYER.publicKey,
     depthSizePair,
     canopyDepth
   );
@@ -43,18 +41,17 @@ export const createMerkleTree = async (
   // creates merkle tree
   const createTreeInstruction = createCreateTreeInstruction(
     {
-      payer: payer.publicKey,
-      treeCreator: payer.publicKey,
+      payer: PAYER.publicKey,
+      treeCreator: PAYER.publicKey,
       treeAuthority: merkleTreeAuthority,
       merkleTree: merkleTreeKeypair.publicKey,
       compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-      // used for on-chain logging
       logWrapper: SPL_NOOP_PROGRAM_ID,
     },
     {
       maxBufferSize: depthSizePair.maxBufferSize,
       maxDepth: depthSizePair.maxDepth,
-      public: false,
+      public: true,
     },
     BUBBLEGUM_PROGRAM_ID
   );
@@ -63,13 +60,13 @@ export const createMerkleTree = async (
     const transaction = new Transaction()
       .add(allocTreeInstruction)
       .add(createTreeInstruction);
-    transaction.feePayer = payer.publicKey;
+    transaction.feePayer = PAYER.publicKey;
 
     const signature = await sendAndConfirmTransaction(
-      connection,
+      CONNECTION,
       transaction,
-      // both `merkleTreeKeypair` PDA and `payer` must be the signers of the transaction
-      [merkleTreeKeypair, payer],
+      // both `merkleTreeKeypair` and `payer` must be the signers of the transaction
+      [merkleTreeKeypair, PAYER],
       {
         commitment: "confirmed",
       }
