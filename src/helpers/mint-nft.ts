@@ -10,7 +10,7 @@ import {
 } from "@solana/spl-account-compression";
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
-import { PAYER, CONNECTION } from "@/constants";
+import { CONNECTION } from "@/constants";
 
 export const mintCompressedNFT = async (
   payer: PublicKey,
@@ -41,9 +41,9 @@ export const mintCompressedNFT = async (
         treeAuthority,
         treeDelegate: payer,
         // reciever of the NFT
-        leafOwner: toAddress || payer,
-        leafDelegate: PAYER.publicKey,
-        collectionAuthority: PAYER.publicKey,
+        leafOwner: toAddress || user,
+        leafDelegate: payer,
+        collectionAuthority: payer,
         collectionAuthorityRecordPda: BUBBLEGUM_PROGRAM_ID,
         collectionMint: mintAccount,
         collectionMetadata: metadataAccount,
@@ -69,7 +69,7 @@ export const mintCompressedNFT = async (
       });
 
     const transaction = new Transaction().add(mintInstruction);
-    transaction.feePayer = user;
+    transaction.feePayer = payer;
     transaction.recentBlockhash = blockhash;
     transaction.lastValidBlockHeight = lastValidBlockHeight;
 
