@@ -1,18 +1,18 @@
 import { Keypair } from "@solana/web3.js";
 import { CreateMetadataAccountArgsV3 } from "@metaplex-foundation/mpl-token-metadata";
 import { ValidDepthSizePair } from "@solana/spl-account-compression";
+import base58 from "bs58";
 import fs from "node:fs";
 import "dotenv/config";
 
 import { createMerkleTree, createCollection } from "@/helpers";
-import { PAYER } from "@/constants";
+import { leafDelegate } from "@/constants";
 
 const setup = async () => {
   try {
     const testWallet = Keypair.generate();
     const treeKeypair = Keypair.generate();
 
-    console.log(`payer - ${PAYER.publicKey.toString()}`);
     console.log(`test wallet - ${testWallet.publicKey.toString()}`);
     console.log(`merkle tree - ${treeKeypair.publicKey.toString()}`);
 
@@ -36,7 +36,7 @@ const setup = async () => {
         sellerFeeBasisPoints: 100,
         creators: [
           {
-            address: PAYER.publicKey,
+            address: leafDelegate.publicKey,
             verified: false,
             share: 100,
           },
@@ -50,13 +50,22 @@ const setup = async () => {
 
     const collection = await createCollection(collectionMetadata);
 
+    if (tree === undefined) {
+      process.exit(1);
+    }
+
+    if (collection === undefined) {
+      process.exit(1);
+    }
+
     const data = {
-      treeAddress: tree?.address.toString(),
-      treeAuthority: tree?.authority.toString(),
-      collectionMintAccount: collection?.mint.toString(),
-      collectionTokenAccount: collection?.token.toString(),
-      collectionMetadataAccount: collection?.metadata.toString(),
-      collectionMasterEditionAccoun: collection?.masterEdition.toString(),
+      payerPrivateKey: base58.encode(leafDelegate.secretKey),
+      treeAddress: tree.address.toString(),
+      treeAuthority: tree.authority.toString(),
+      collectionMintAccount: collection.mint.toString(),
+      collectionTokenAccount: collection.token.toString(),
+      collectionMetadataAccount: collection.metadata.toString(),
+      collectionMasterEditionAccoun: collection.masterEdition.toString(),
     };
 
     fs.writeFileSync("accounts.json", JSON.stringify(data, null, 2), "utf-8");

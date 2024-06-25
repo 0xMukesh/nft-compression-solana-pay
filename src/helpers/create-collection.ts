@@ -19,7 +19,7 @@ import {
 } from "@solana/spl-token";
 
 import { sleep } from "@/utils";
-import { CONNECTION, PAYER } from "@/constants";
+import { connection, leafDelegate } from "@/constants";
 
 export const createCollection = async (
   metadata: CreateMetadataAccountArgsV3
@@ -27,10 +27,10 @@ export const createCollection = async (
   try {
     console.log("creating collection's mint account...");
     const mintAccount = await createMint(
-      CONNECTION,
-      PAYER,
-      PAYER.publicKey,
-      PAYER.publicKey,
+      connection,
+      leafDelegate,
+      leafDelegate.publicKey,
+      leafDelegate.publicKey,
       0,
       undefined,
       {
@@ -44,10 +44,10 @@ export const createCollection = async (
 
     console.log("creating token account...");
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
-      CONNECTION,
-      PAYER,
+      connection,
+      leafDelegate,
       mintAccount,
-      PAYER.publicKey,
+      leafDelegate.publicKey,
       true,
       "confirmed",
       {
@@ -60,11 +60,11 @@ export const createCollection = async (
 
     console.log("minting 1 token for the collection...");
     const mintSignature = await mintTo(
-      CONNECTION,
-      PAYER,
+      connection,
+      leafDelegate,
       mintAccount,
       tokenAccount.address,
-      PAYER,
+      leafDelegate,
       1,
       [],
       {
@@ -89,9 +89,9 @@ export const createCollection = async (
       {
         metadata: metadataAccount,
         mint: mintAccount,
-        mintAuthority: PAYER.publicKey,
-        payer: PAYER.publicKey,
-        updateAuthority: PAYER.publicKey,
+        mintAuthority: leafDelegate.publicKey,
+        payer: leafDelegate.publicKey,
+        updateAuthority: leafDelegate.publicKey,
       },
       {
         createMetadataAccountArgsV3: metadata,
@@ -115,9 +115,9 @@ export const createCollection = async (
         {
           edition: masterEditionAccount,
           mint: mintAccount,
-          mintAuthority: PAYER.publicKey,
-          payer: PAYER.publicKey,
-          updateAuthority: PAYER.publicKey,
+          mintAuthority: leafDelegate.publicKey,
+          payer: leafDelegate.publicKey,
+          updateAuthority: leafDelegate.publicKey,
           metadata: metadataAccount,
         },
         {
@@ -130,7 +130,7 @@ export const createCollection = async (
     const collectionSizeInstruction = createSetCollectionSizeInstruction(
       {
         collectionMetadata: metadataAccount,
-        collectionAuthority: PAYER.publicKey,
+        collectionAuthority: leafDelegate.publicKey,
         collectionMint: mintAccount,
       },
       {
@@ -142,12 +142,12 @@ export const createCollection = async (
       .add(createMetadataInstruction)
       .add(createMasterEditionInstruction)
       .add(collectionSizeInstruction);
-    transaction.feePayer = PAYER.publicKey;
+    transaction.feePayer = leafDelegate.publicKey;
 
     const signature = await sendAndConfirmTransaction(
-      CONNECTION,
+      connection,
       transaction,
-      [PAYER],
+      [leafDelegate],
       {
         commitment: "confirmed",
       }

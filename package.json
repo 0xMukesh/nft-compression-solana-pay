@@ -3,16 +3,10 @@
   "scripts": {
     "build": "tsup",
     "watch": "tsup --watch",
-    "dev": "nodemon dist/index.js"
+    "dev": "nodemon dist/index.js",
+    "validator": "amman start --config ./config/amman.cjs"
   },
   "author": "0xMukesh",
-  "devDependencies": {
-    "@types/express": "^4.17.17",
-    "@types/node": "^18.15.11",
-    "nodemon": "^2.0.22",
-    "tsup": "^6.7.0",
-    "typescript": "^5.0.4"
-  },
   "dependencies": {
     "@metaplex-foundation/js": "^0.18.3",
     "@metaplex-foundation/mpl-bubblegum": "^0.6.2",
@@ -22,7 +16,14 @@
     "@solana/web3.js": "^1.75.0",
     "bs58": "^5.0.0",
     "dotenv": "^16.0.3",
-    "envalid": "^7.3.1",
     "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@metaplex-foundation/amman": "^0.12.1",
+    "@types/express": "^4.17.17",
+    "@types/node": "^18.15.11",
+    "nodemon": "^2.0.22",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4"
   }
 }

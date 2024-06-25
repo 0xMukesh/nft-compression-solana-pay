@@ -8,12 +8,12 @@ import {
 
 import { mintCompressedNFT } from "@/helpers";
 import {
-  CONNECTION,
-  PAYER,
-  TREE_ADDRESS,
-  COLLECTION_MINT_ACCOUNT,
-  COLLECTION_METADATA_ACCOUNT,
-  COLLECTION_MASTER_EDITION_ACCOUNT,
+  connection,
+  leafDelegate,
+  treeAddress,
+  collectionMintAccount,
+  collectionMetadataAccount,
+  collectionMasterEditionAccount,
 } from "@/constants";
 
 export const mintHandler = async (req: Request, res: Response) => {
@@ -40,7 +40,7 @@ export const mintHandler = async (req: Request, res: Response) => {
         uri: "https://nftstorage.link/ipfs/bafkreibtsmyhmx6lcg45uus6ov3bvg5yqzdcp2n7w3nksezh5mqzp5gmoa",
         creators: [
           {
-            address: PAYER.publicKey,
+            address: leafDelegate.publicKey,
             verified: false,
             share: 100,
           },
@@ -62,10 +62,10 @@ export const mintHandler = async (req: Request, res: Response) => {
 
       const transaction = await mintCompressedNFT(
         new PublicKey(account),
-        TREE_ADDRESS,
-        COLLECTION_MINT_ACCOUNT,
-        COLLECTION_METADATA_ACCOUNT,
-        COLLECTION_MASTER_EDITION_ACCOUNT,
+        treeAddress,
+        collectionMintAccount,
+        collectionMetadataAccount,
+        collectionMasterEditionAccount,
         nftMetadata,
         new PublicKey(account)
       );
@@ -77,14 +77,14 @@ export const mintHandler = async (req: Request, res: Response) => {
       }
 
       const { blockhash, lastValidBlockHeight } =
-        await CONNECTION.getLatestBlockhash({
+        await connection.getLatestBlockhash({
           commitment: "confirmed",
         });
       transaction.feePayer = new PublicKey(account);
       transaction.recentBlockhash = blockhash;
       transaction.lastValidBlockHeight = lastValidBlockHeight;
 
-      transaction.partialSign(PAYER);
+      transaction.partialSign(leafDelegate);
 
       const serializedTransaction = transaction.serialize({
         requireAllSignatures: false,

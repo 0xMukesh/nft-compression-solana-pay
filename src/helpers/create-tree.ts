@@ -14,7 +14,8 @@ import {
   SPL_NOOP_PROGRAM_ID,
   ValidDepthSizePair,
 } from "@solana/spl-account-compression";
-import { CONNECTION, PAYER } from "@/constants";
+
+import { connection, leafDelegate } from "@/constants";
 
 export const createMerkleTree = async (
   merkleTreeKeypair: Keypair,
@@ -31,9 +32,9 @@ export const createMerkleTree = async (
 
   // allocates merkle tree's account
   const allocTreeInstruction = await createAllocTreeIx(
-    CONNECTION,
+    connection,
     merkleTreeKeypair.publicKey,
-    PAYER.publicKey,
+    leafDelegate.publicKey,
     depthSizePair,
     canopyDepth
   );
@@ -41,8 +42,8 @@ export const createMerkleTree = async (
   // creates merkle tree
   const createTreeInstruction = createCreateTreeInstruction(
     {
-      payer: PAYER.publicKey,
-      treeCreator: PAYER.publicKey,
+      payer: leafDelegate.publicKey,
+      treeCreator: leafDelegate.publicKey,
       treeAuthority: merkleTreeAuthority,
       merkleTree: merkleTreeKeypair.publicKey,
       compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
@@ -60,13 +61,13 @@ export const createMerkleTree = async (
     const transaction = new Transaction()
       .add(allocTreeInstruction)
       .add(createTreeInstruction);
-    transaction.feePayer = PAYER.publicKey;
+    transaction.feePayer = leafDelegate.publicKey;
 
     const signature = await sendAndConfirmTransaction(
-      CONNECTION,
+      connection,
       transaction,
       // both `merkleTreeKeypair` and `payer` must be the signers of the transaction
-      [merkleTreeKeypair, PAYER],
+      [merkleTreeKeypair, leafDelegate],
       {
         commitment: "confirmed",
       }
