@@ -31,19 +31,13 @@ NOTE: this project uses [amman](https://github.com/metaplex-foundation/amman) fo
    pnpm validator
    ```
 
-NOTE: if you've all the required variables mentioned in `.env.example` file then you skip the upcoming two steps and can follow along after that.
-
-5. create a leaf delegate wallet (handles gas fees for creation of nft collection related accounts and merkle tree accounts) which would be used to sign all the transactions in future. store payer's private key in `.env` file (rename `.env.example` to `.env`)
+5. create a merkle tree account and collection mint account via running the following command
 
    ```sh
-   pnpm build && node dist/script/create-payer.js
+   pnpm build && node dist/index.js
    ```
 
-6. setup all the required accounts for nft collection and merkle tree accounts. a new file named `accounts.json` would be created with public keys of all the accounts, copy and paste them accordingly in `.env` file
-
-   ```sh
-   pnpm build && node dist/script/setup.js
-   ```
+6. copy the addresses of merkle tree and collection mint accounts and put them into `.env` along with `RPC_URL` and `PRIVATE_KEY` (private key of wallet which would be used for paying gas fees for creation of merkle tree and collection mint accounts)
 
 7. all the variables are now ready, start the server in development mode by running the following two commands in two different terminal windows
 

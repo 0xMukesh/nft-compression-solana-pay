@@ -1,25 +1,15 @@
 import { Request, Response } from "express";
-import { PublicKey } from "@solana/web3.js";
-import {
-  MetadataArgs,
-  TokenProgramVersion,
-  TokenStandard,
-} from "@metaplex-foundation/mpl-bubblegum";
+import { publicKey } from "@metaplex-foundation/umi";
+import { mplBubblegum } from "@metaplex-foundation/mpl-bubblegum";
 
-import { mintCompressedNFT } from "@/helpers";
-import {
-  connection,
-  leafDelegate,
-  treeAddress,
-  collectionMintAccount,
-  collectionMetadataAccount,
-  collectionMasterEditionAccount,
-} from "@/constants";
+import { mintCnft } from "@/helpers";
+import { setupUmi } from "@/utils";
+import { env } from "@/constants";
 
 export const mintHandler = async (req: Request, res: Response) => {
   if (req.method === "GET") {
     return res.status(200).json({
-      label: "Compresiooooon",
+      label: "compresiooooon",
       icon: "https://i.imgur.com/pOfoqIx.jpg",
     });
   }
@@ -29,70 +19,60 @@ export const mintHandler = async (req: Request, res: Response) => {
 
     if (!account) {
       return res.status(400).json({
-        error: "Missing `account` field in request body",
+        error: "missing `account` field in request body",
       });
     }
 
     try {
-      const nftMetadata: MetadataArgs = {
-        name: "Compressiooooon #1",
-        symbol: "CMPN",
-        uri: "https://nftstorage.link/ipfs/bafkreibtsmyhmx6lcg45uus6ov3bvg5yqzdcp2n7w3nksezh5mqzp5gmoa",
-        creators: [
-          {
-            address: leafDelegate.publicKey,
-            verified: false,
-            share: 100,
-          },
-          {
-            address: new PublicKey(account),
-            verified: false,
-            share: 0,
-          },
-        ],
-        editionNonce: 0,
-        uses: null,
-        collection: null,
-        primarySaleHappened: false,
-        sellerFeeBasisPoints: 0,
-        isMutable: false,
-        tokenProgramVersion: TokenProgramVersion.Original,
-        tokenStandard: TokenStandard.NonFungible,
-      };
+      const umi = await setupUmi();
+      umi.use(mplBubblegum());
 
-      const transaction = await mintCompressedNFT(
-        new PublicKey(account),
-        treeAddress,
-        collectionMintAccount,
-        collectionMetadataAccount,
-        collectionMasterEditionAccount,
-        nftMetadata,
-        new PublicKey(account)
-      );
+      const reciever = publicKey(account);
+      const collectionMint = publicKey(env.COLLECTION_MINT_ADDRESS);
+      const merkleTree = publicKey(env.TREE_ADDRESS);
 
-      if (!transaction) {
-        return res.status(400).json({
-          error: "Got empty transaction",
+      const mintCnftBuilder = await mintCnft({
+        reciever,
+        collectionMint,
+        merkleTree,
+        metadata: {
+          name: "Critter Capo",
+          uri: "https://fcvngkzedh3z2lnklcr6emmdaj6hnh3jjtymlymhtcoaywz3luva.arweave.net/KKrTKyQZ950tqlij4jGDAnx2n2lM8MXhh5icDFs7XSo",
+          sellerFeeBasisPoints: 0,
+          collection: {
+            key: collectionMint,
+            verified: false,
+          },
+          creators: [
+            {
+              address: reciever,
+              verified: false,
+              share: 100,
+            },
+          ],
+        },
+      });
+
+      if (!mintCnftBuilder) {
+        return res.status(500).json({
+          error: "failed to create mint cnft transaction",
         });
       }
 
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash({
-          commitment: "confirmed",
-        });
-      transaction.feePayer = new PublicKey(account);
-      transaction.recentBlockhash = blockhash;
-      transaction.lastValidBlockHeight = lastValidBlockHeight;
+      const instructions = [...mintCnftBuilder.getInstructions()];
+      const { blockhash } = await umi.rpc.getLatestBlockhash();
 
-      transaction.partialSign(leafDelegate);
-
-      const serializedTransaction = transaction.serialize({
-        requireAllSignatures: false,
+      const transaction = umi.transactions.create({
+        blockhash,
+        instructions,
+        payer: reciever,
       });
-      const base64 = serializedTransaction.toString("base64");
+      const serializedTransaction = Buffer.from(
+        umi.transactions.serialize(transaction)
+      ).toString("base64");
 
       return res.status(200).json({
-        transaction: base64,
+        transaction: serializedTransaction,
         message: "compresiooooon!!",
       });
     } catch (err) {
